@@ -129,9 +129,9 @@ function seedData() {
     // Hash password
     bcrypt.hash(defaultPassword, 10, (err, hash) => {
       // Insert users
-      db.run(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`, 
+      db.run(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`,
         ['admin', hash, 'admin']);
-      db.run(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`, 
+      db.run(`INSERT INTO users (username, password, role) VALUES (?, ?, ?)`,
         ['user', hash, 'customer']);
 
       // Insert inventory

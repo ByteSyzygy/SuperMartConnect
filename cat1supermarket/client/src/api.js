@@ -55,6 +55,9 @@ export const inventoryAPI = {
   addCounty: (countyData) => api.post('/inventory/counties', countyData),
   updateCounty: (id, countyData) => api.put(`/inventory/counties/${id}`, countyData),
   deleteCounty: (id) => api.delete(`/inventory/counties/${id}`),
+  addProduct(param) {
+
+  }
 };
 
 // Sales API

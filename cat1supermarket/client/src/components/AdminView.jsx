@@ -4,6 +4,8 @@ import { Bar } from 'react-chartjs-2';
 import { inventoryAPI, salesAPI, mpesaAPI } from '../api';
 import socketService from '../socket';
 import { session } from '../api';
+import AddProductSection from "./AddProductComponent.jsx";
+
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -301,6 +303,16 @@ export default function AdminView() {
             >
               Counties
             </button>
+            <button
+                onClick={() => setActiveTab('add-product')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    activeTab === 'add-product'
+                        ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+            >
+              Add Product
+            </button>
           </div>
         </div>
       </div>
@@ -444,6 +456,13 @@ export default function AdminView() {
 
           {activeTab === 'counties' && (
             <CountiesSection counties={counties} onUpdate={fetchData} />
+          )}
+
+          {activeTab === 'add-product' && (
+              <AddProductSection
+                  counties={counties}
+                  onProductAdded={fetchData}
+              />
           )}
         </>
       )}
