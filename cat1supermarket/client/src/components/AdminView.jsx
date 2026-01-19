@@ -82,13 +82,13 @@ export default function AdminView() {
     // Listen for restock events
     const handleRestock = (data) => {
       const increase = data.newStock - data.oldStock;
-      
+
       if (increase === 0 && !data.deleted) return;
-      
+
       // Use the formatted message from server if available
       const notification = {
         id: Date.now(),
-        message: data.message || (data.deleted 
+        message: data.message || (data.deleted
           ? `Delete Update: ${data.branch} ${data.product} has been removed from inventory.`
           : `Restock Update: ${data.branch} ${data.product} stock increased by ${increase}`),
         type: 'restock'
@@ -154,7 +154,7 @@ export default function AdminView() {
 
   const handleEditItem = async () => {
     if (!editingItem) return;
-    
+
     try {
       const updates = {};
       if (editForm.product !== editingItem.product) updates.product = editForm.product;
@@ -177,7 +177,7 @@ export default function AdminView() {
 
   const handleDeleteItem = async () => {
     if (!deletingItem) return;
-    
+
     try {
       await inventoryAPI.deleteItem(deletingItem.id);
       setDeletingItem(null);
@@ -190,14 +190,16 @@ export default function AdminView() {
 
   // Chart Data Preparation
   const prepareChartData = () => {
-    const soldPerBrand = { Coke: 0, Fanta: 0, Sprite: 0 };
-    const incomePerBrand = { Coke: 0, Fanta: 0, Sprite: 0 };
-    
+    const soldPerBrand = {};
+    const incomePerBrand = {};
+
     sales.forEach(sale => {
-      if (soldPerBrand[sale.product] !== undefined) {
-        soldPerBrand[sale.product] += sale.quantity;
-        incomePerBrand[sale.product] += sale.total_amount;
+      if (!soldPerBrand[sale.product]) {
+        soldPerBrand[sale.product] = 0;
+        incomePerBrand[sale.product] = 0;
       }
+      soldPerBrand[sale.product] += sale.quantity;
+      incomePerBrand[sale.product] += sale.total_amount;
     });
 
     return { soldPerBrand, incomePerBrand };
@@ -228,11 +230,10 @@ export default function AdminView() {
           {notifications.map(notif => (
             <div
               key={notif.id}
-              className={`px-4 py-3 pr-8 rounded-lg shadow-lg transition-all duration-300 relative ${
-                notif.type === 'sale' ? 'bg-blue-500' :
-                notif.type === 'restock' ? 'bg-green-500' :
-                notif.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-              } text-white text-sm`}
+              className={`px-4 py-3 pr-8 rounded-lg shadow-lg transition-all duration-300 relative ${notif.type === 'sale' ? 'bg-blue-500' :
+                  notif.type === 'restock' ? 'bg-green-500' :
+                    notif.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                } text-white text-sm`}
             >
               {notif.message}
               <button
@@ -250,65 +251,60 @@ export default function AdminView() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Headquarters Dashboard</h1>
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={fetchData}
             className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-full transition-colors"
             title="Refresh Data"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={loading ? 'animate-spin' : ''}>
-              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+              <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
             </svg>
           </button>
           <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-            <button 
+            <button
               onClick={() => setActiveTab('inventory')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === 'inventory' 
-                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' 
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'inventory'
+                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               Inventory
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('reports')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === 'reports' 
-                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' 
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'reports'
+                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               Sales Reports
             </button>
-            <button 
+            <button
               onClick={() => {
                 setActiveTab('mpesa');
                 fetchMpesaTransactions();
               }}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === 'mpesa' 
-                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' 
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'mpesa'
+                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               M-Pesa
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('counties')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === 'counties' 
-                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400' 
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'counties'
+                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
+                }`}
             >
               Counties
             </button>
             <button
-                onClick={() => setActiveTab('add-product')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    activeTab === 'add-product'
-                        ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+              onClick={() => setActiveTab('add-product')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'add-product'
+                  ? 'bg-white dark:bg-gray-700 shadow text-blue-600 dark:text-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                 }`}
             >
               Add Product
@@ -344,11 +340,10 @@ export default function AdminView() {
                       <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                         <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{item.branch}</td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.product === 'Coke' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
-                            item.product === 'Fanta' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
-                            'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                          }`}>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${item.product === 'Coke' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                              item.product === 'Fanta' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                            }`}>
                             {item.product}
                           </span>
                         </td>
@@ -360,21 +355,21 @@ export default function AdminView() {
                         <td className="px-6 py-4">KES {item.price}</td>
                         <td className="px-6 py-4 text-right">
                           <div className="flex items-center justify-end gap-2">
-                            <button 
+                            <button
                               onClick={() => openRestockModal(item)}
                               className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 font-medium hover:underline text-sm"
                             >
                               Restock
                             </button>
                             <span className="text-gray-300 dark:text-gray-600">|</span>
-                            <button 
+                            <button
                               onClick={() => openEditModal(item)}
                               className="text-amber-600 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-300 font-medium hover:underline text-sm"
                             >
                               Edit
                             </button>
                             <span className="text-gray-300 dark:text-gray-600">|</span>
-                            <button 
+                            <button
                               onClick={() => setDeletingItem(item)}
                               className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300 font-medium hover:underline text-sm"
                             >
@@ -415,13 +410,15 @@ export default function AdminView() {
                 <div className="card">
                   <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Sales Volume by Brand</h3>
                   <div className="h-64">
-                    <Bar 
+                    <Bar
                       data={{
                         labels: Object.keys(chartData.soldPerBrand),
                         datasets: [{
                           label: 'Units Sold',
                           data: Object.values(chartData.soldPerBrand),
-                          backgroundColor: ['#ef4444', '#f97316', '#22c55e'],
+                          backgroundColor: [
+                            '#ef4444', '#f97316', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'
+                          ],
                           borderRadius: 6,
                         }]
                       }}
@@ -432,13 +429,15 @@ export default function AdminView() {
                 <div className="card">
                   <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Revenue by Brand</h3>
                   <div className="h-64">
-                    <Bar 
+                    <Bar
                       data={{
                         labels: Object.keys(chartData.incomePerBrand),
                         datasets: [{
                           label: 'Revenue (KES)',
                           data: Object.values(chartData.incomePerBrand),
-                          backgroundColor: ['#ef4444', '#f97316', '#22c55e'],
+                          backgroundColor: [
+                            '#ef4444', '#f97316', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b'
+                          ],
                           borderRadius: 6,
                         }]
                       }}
@@ -459,10 +458,10 @@ export default function AdminView() {
           )}
 
           {activeTab === 'add-product' && (
-              <AddProductSection
-                  counties={counties}
-                  onProductAdded={fetchData}
-              />
+            <AddProductSection
+              counties={counties}
+              onProductAdded={fetchData}
+            />
           )}
         </>
       )}
@@ -477,26 +476,26 @@ export default function AdminView() {
                 <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Restock {editingItem.product}</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
                   Adding stock to <strong>{editingItem.branch}</strong> branch.
-                  <br/>Current Level: {editingItem.stock}
+                  <br />Current Level: {editingItem.stock}
                 </p>
-                
+
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quantity to Add</label>
                   <div className="flex items-center border dark:border-gray-600 rounded-lg overflow-hidden">
-                    <button 
-                      onClick={() => setRestockAmount(Math.max(1, restockAmount - 10))} 
+                    <button
+                      onClick={() => setRestockAmount(Math.max(1, restockAmount - 10))}
                       className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-r dark:border-gray-600 text-gray-600 dark:text-gray-300"
                     >
                       -
                     </button>
-                    <input 
-                      type="number" 
-                      value={restockAmount} 
+                    <input
+                      type="number"
+                      value={restockAmount}
                       onChange={(e) => setRestockAmount(parseInt(e.target.value) || 0)}
                       className="flex-1 text-center py-2 focus:outline-none dark:bg-gray-700 dark:text-white"
                     />
-                    <button 
-                      onClick={() => setRestockAmount(restockAmount + 10)} 
+                    <button
+                      onClick={() => setRestockAmount(restockAmount + 10)}
                       className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 border-l dark:border-gray-600 text-gray-600 dark:text-gray-300"
                     >
                       +
@@ -505,14 +504,14 @@ export default function AdminView() {
                 </div>
 
                 <div className="flex gap-3">
-                  <button 
-                    onClick={() => setEditingItem(null)} 
+                  <button
+                    onClick={() => setEditingItem(null)}
                     className="flex-1 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                   >
                     Cancel
                   </button>
-                  <button 
-                    onClick={handleRestock} 
+                  <button
+                    onClick={handleRestock}
                     className="flex-1 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700"
                   >
                     Confirm Restock
@@ -525,31 +524,31 @@ export default function AdminView() {
                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">
                   Editing item at <strong>{editingItem.branch}</strong> branch.
                 </p>
-                
+
                 <div className="space-y-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Product Name</label>
-                    <input 
-                      type="text" 
-                      value={editForm.product} 
+                    <input
+                      type="text"
+                      value={editForm.product}
                       onChange={(e) => setEditForm({ ...editForm, product: e.target.value })}
                       className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Price (KES)</label>
-                    <input 
-                      type="number" 
-                      value={editForm.price} 
+                    <input
+                      type="number"
+                      value={editForm.price}
                       onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
                       className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Stock</label>
-                    <input 
-                      type="number" 
-                      value={editForm.stock} 
+                    <input
+                      type="number"
+                      value={editForm.stock}
                       onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
                       className="w-full px-3 py-2 border dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     />
@@ -557,14 +556,14 @@ export default function AdminView() {
                 </div>
 
                 <div className="flex gap-3">
-                  <button 
-                    onClick={() => setEditingItem(null)} 
+                  <button
+                    onClick={() => setEditingItem(null)}
                     className="flex-1 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                   >
                     Cancel
                   </button>
-                  <button 
-                    onClick={handleEditItem} 
+                  <button
+                    onClick={handleEditItem}
                     className="flex-1 bg-amber-600 text-white py-2 rounded-lg font-semibold hover:bg-amber-700"
                   >
                     Save Changes
@@ -583,22 +582,22 @@ export default function AdminView() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-sm relative z-10 p-6 transition-colors duration-200">
             <div className="text-center">
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mx-auto mb-4">
-                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>
               <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">Delete Item?</h3>
               <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
                 Are you sure you want to delete <strong>{deletingItem.product}</strong> from <strong>{deletingItem.branch}</strong> branch? This action cannot be undone.
               </p>
-              
+
               <div className="flex gap-3">
-                <button 
-                  onClick={() => setDeletingItem(null)} 
+                <button
+                  onClick={() => setDeletingItem(null)}
                   className="flex-1 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={handleDeleteItem} 
+                <button
+                  onClick={handleDeleteItem}
                   className="flex-1 bg-red-600 text-white py-2 rounded-lg font-semibold hover:bg-red-700"
                 >
                   Delete
@@ -636,8 +635,8 @@ function MpesaSection({ transactions }) {
       const response = await mpesaAPI.testConnection();
       setConnectionTest(response.data);
     } catch (error) {
-      setConnectionTest({ 
-        success: false, 
+      setConnectionTest({
+        success: false,
         message: error.response?.data?.message || 'Connection test failed',
         missingVariables: error.response?.data?.missingVariables,
         warnings: error.response?.data?.warnings
@@ -658,13 +657,13 @@ function MpesaSection({ transactions }) {
         <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">M-Pesa Configuration Status</h2>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={fetchConfigStatus}
               className="px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
             >
               Refresh
             </button>
-            <button 
+            <button
               onClick={testConnection}
               disabled={testing}
               className="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
@@ -673,7 +672,7 @@ function MpesaSection({ transactions }) {
             </button>
           </div>
         </div>
-        
+
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -682,31 +681,28 @@ function MpesaSection({ transactions }) {
           <div className="p-4">
             {/* Status Indicator */}
             <div className="flex items-center gap-3 mb-4">
-              <div className={`w-4 h-4 rounded-full ${
-                configStatus?.configured ? 'bg-green-500' : 'bg-red-500'
-              }`}></div>
-              <span className={`font-medium ${
-                configStatus?.configured ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-              }`}>
+              <div className={`w-4 h-4 rounded-full ${configStatus?.configured ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+              <span className={`font-medium ${configStatus?.configured ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                }`}>
                 {configStatus?.configured ? 'M-Pesa is configured' : 'M-Pesa is NOT configured'}
               </span>
             </div>
 
             {/* Connection Test Result */}
             {connectionTest && (
-              <div className={`mb-4 p-3 rounded-lg ${
-                connectionTest.success 
-                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+              <div className={`mb-4 p-3 rounded-lg ${connectionTest.success
+                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800'
                   : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-              }`}>
+                }`}>
                 <div className="flex items-center gap-2">
                   {connectionTest.success ? (
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-600 dark:text-green-400">
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
                     </svg>
                   ) : (
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-600 dark:text-red-400">
-                      <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                      <circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" />
                     </svg>
                   )}
                   <span className={connectionTest.success ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}>
@@ -815,11 +811,10 @@ function MpesaSection({ transactions }) {
                     <td className="px-6 py-4 font-medium">KES {tx.amount}</td>
                     <td className="px-6 py-4">{tx.branch || '-'}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        tx.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 
-                        tx.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' : 
-                        'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                      }`}>
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tx.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                          tx.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                            'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                        }`}>
                         {tx.status}
                       </span>
                     </td>
@@ -859,17 +854,17 @@ function CountiesSection({ counties, onUpdate }) {
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden transition-colors duration-200">
       <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Counties Management</h2>
-        <button 
+        <button
           onClick={() => setAdding(true)}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           Add County
         </button>
       </div>
-      
+
       {adding && (
         <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border-b dark:border-gray-700">
           <div className="flex gap-4 flex-wrap">
@@ -894,13 +889,13 @@ function CountiesSection({ counties, onUpdate }) {
               onChange={(e) => setNewCounty({ ...newCounty, longitude: e.target.value })}
               className="px-3 py-2 border dark:border-gray-600 rounded dark:bg-gray-700 w-32"
             />
-            <button 
+            <button
               onClick={handleAddCounty}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
             >
               Save
             </button>
-            <button 
+            <button
               onClick={() => setAdding(false)}
               className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
             >
@@ -929,10 +924,9 @@ function CountiesSection({ counties, onUpdate }) {
                 <td className="px-6 py-4">{county.latitude || '-'}</td>
                 <td className="px-6 py-4">{county.longitude || '-'}</td>
                 <td className="px-6 py-4">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    county.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 
-                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                  }`}>
+                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${county.is_active ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
                     {county.is_active ? 'Active' : 'Inactive'}
                   </span>
                 </td>
