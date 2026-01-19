@@ -408,6 +408,7 @@ router.post('/stkquery', authenticateToken, async (req, res) => {
 // M-Pesa Callback endpoint
 router.post('/callback', async (req, res) => {
   const { Body } = req.body;
+  console.log("the callback response is ", Body)
 
   try {
     if (Body && Body.stkCallback) {
@@ -418,7 +419,9 @@ router.post('/callback', async (req, res) => {
       const resultDesc = callback.ResultDesc;
       
       // Extract metadata if available
+      console.log("the call back is", callback)
       const metaData = callback.CallbackMetadata?.Item || [];
+      console.log("the metaData is ", metaData);
       const amount = metaData.find(item => item.Name === 'Amount')?.Value;
       const mpesaReceiptNumber = metaData.find(item => item.Name === 'MpesaReceiptNumber')?.Value;
       const transactionDate = metaData.find(item => item.Name === 'TransactionDate')?.Value;
