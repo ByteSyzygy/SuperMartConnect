@@ -34,6 +34,7 @@ function initializeDatabase() {
           product TEXT NOT NULL,
           price REAL NOT NULL,
           stock INTEGER NOT NULL DEFAULT 0,
+          imageUrl TEXT NOT NULL,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -85,11 +86,12 @@ function initializeDatabase() {
       `);
 
       // Seed initial data
-      seedData();
-      
+
+      //seedData()
+
       // Initialize counties
       initializeCounties();
-      
+
       console.log('Database tables initialized');
       resolve();
     });
@@ -151,8 +153,8 @@ function seedData() {
       ];
 
       inventoryData.forEach(([branch, product, price, stock]) => {
-        db.run(`INSERT INTO inventory (branch, product, price, stock) VALUES (?, ?, ?, ?)`,
-          [branch, product, price, stock]);
+        db.run(`INSERT INTO inventory (branch, product, price, stock, imageUrl) VALUES (?, ?, ?, ?, ?)`,
+          [branch, product, price, stock, '']);
       });
 
       console.log('Initial data seeded successfully');

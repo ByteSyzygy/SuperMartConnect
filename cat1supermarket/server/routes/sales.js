@@ -20,7 +20,7 @@ router.post('/', authenticateToken, (req, res) => {
     `INSERT INTO sales (user_id, branch, product, quantity, total_amount, timestamp) 
      VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
     [req.user.id, branch, product, quantity, total_amount],
-    function(err) {
+    function (err) {
       if (err) {
         console.error('Error recording sale:', err);
         return res.status(500).json({ error: 'Failed to record sale' });
@@ -187,6 +187,21 @@ router.get('/by-branch', authenticateToken, (req, res) => {
 
     res.json(rows);
   });
+});
+
+// Get current user's sales history
+router.get('/my-purchases', authenticateToken, (req, res) => {
+  db.all(
+    'SELECT * FROM sales WHERE user_id = ? ORDER BY timestamp DESC',
+    [req.user.id],
+    (err, rows) => {
+      if (err) {
+        console.error('Error fetching user sales:', err);
+        return res.status(500).json({ error: 'Failed to fetch purchase history' });
+      }
+      res.json(rows);
+    }
+  );
 });
 
 module.exports = router;

@@ -1,6 +1,7 @@
 const express = require('express');
 const { db } = require('../database');
 const { authenticateToken } = require('../middleware/auth');
+const { cloudinary, uploadSingleImage } = require("../cloudinary");
 
 const router = express.Router();
 
@@ -53,7 +54,7 @@ router.post('/counties', authenticateToken, (req, res) => {
   db.run(
     `INSERT INTO counties (name, latitude, longitude) VALUES (?, ?, ?)`,
     [name, latitude || null, longitude || null],
-    function(err) {
+    function (err) {
       if (err) {
         console.error('Error adding county:', err);
         return res.status(500).json({ error: 'Failed to add county' });
@@ -79,7 +80,7 @@ router.put('/counties/:id', authenticateToken, (req, res) => {
   db.run(
     `UPDATE counties SET name = ?, latitude = ?, longitude = ?, is_active = ? WHERE id = ?`,
     [name, latitude, longitude, is_active, req.params.id],
-    function(err) {
+    function (err) {
       if (err) {
         console.error('Error updating county:', err);
         return res.status(500).json({ error: 'Failed to update county' });
@@ -104,7 +105,7 @@ router.delete('/counties/:id', authenticateToken, (req, res) => {
   db.run(
     `UPDATE counties SET is_active = 0 WHERE id = ?`,
     [req.params.id],
-    function(err) {
+    function (err) {
       if (err) {
         console.error('Error deleting county:', err);
         return res.status(500).json({ error: 'Failed to delete county' });
@@ -145,7 +146,8 @@ router.get('/', authenticateToken, (req, res) => {
       branch: row.branch,
       product: row.product,
       price: row.price,
-      stock: row.stock
+      stock: row.stock,
+      imageUrl: row.imageUrl
     }));
 
     res.json(items);
@@ -192,7 +194,7 @@ router.put('/:id/stock', authenticateToken, (req, res) => {
     db.run(
       'UPDATE inventory SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [stock, id],
-      function(err) {
+      function (err) {
         if (err) {
           console.error('Error updating stock:', err);
           return res.status(500).json({ error: 'Failed to update stock' });
@@ -267,7 +269,7 @@ router.put('/:id', authenticateToken, (req, res) => {
     db.run(
       'UPDATE inventory SET price = ?, stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [newPrice, newStock, id],
-      function(err) {
+      function (err) {
         if (err) {
           console.error('Error updating item:', err);
           return res.status(500).json({ error: 'Failed to update item' });
@@ -298,16 +300,23 @@ router.put('/:id', authenticateToken, (req, res) => {
 });
 
 // Add new inventory item (admin only)
-router.post('/', authenticateToken, (req, res) => {
+router.post('/', authenticateToken, uploadSingleImage('image'), (req, res) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
   }
+
+  console.log('Add product request body:', req.body);
+  console.log('Add product request file:', req.file);
 
   const { branch, product, price, stock } = req.body;
 
   if (!branch || !product || price === undefined || stock === undefined) {
     return res.status(400).json({ error: 'All fields are required' });
   }
+
+  // Ensure imageUrl is never undefined to avoid SQLITE_CONSTRAINT
+  const imageUrl = req.file ? (req.file.path || req.file.url || req.file.secure_url || '') : '';
+  console.log('Determined imageUrl:', imageUrl);
 
   // Check if item with same branch and product already exists
   db.get(
@@ -320,24 +329,18 @@ router.post('/', authenticateToken, (req, res) => {
       }
 
       if (existingItem) {
-        // Item exists - update the stock by adding to existing
+        // ...Existing update logic...
         const newStock = existingItem.stock + stock;
-        
-        // Format notification message
-        const adminName = req.user.username;
-        const increase = stock;
-        const notificationMessage = `Restock Update: ${branch} ${product} stock increased by ${increase} unit${increase !== 1 ? 's' : ''}. New total: ${newStock} (Updated by Admin ${adminName}).`;
 
         db.run(
           'UPDATE inventory SET stock = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
           [newStock, existingItem.id],
-          function(err) {
+          function (err) {
             if (err) {
               console.error('Error updating stock:', err);
               return res.status(500).json({ error: 'Failed to update stock' });
             }
 
-            // Emit WebSocket event to notify all connected clients
             const io = req.app.get('io');
             io.to('admin-room').emit('stock-restocked', {
               id: existingItem.id,
@@ -346,31 +349,27 @@ router.post('/', authenticateToken, (req, res) => {
               oldStock: existingItem.stock,
               newStock: newStock,
               updatedBy: req.user.username,
-              message: notificationMessage
-            });
-
-            io.to('customer-room').emit('inventory-updated', {
-              branch: branch,
-              product: product,
-              newStock: newStock
+              message: `Restock Update: ${branch} ${product} stock increased by ${stock}.`
             });
 
             res.status(200).json({
               success: true,
               id: existingItem.id,
-              message: `Stock updated: ${product} in ${branch} now has ${newStock} units`
+              message: `Stock updated: ${product} in ${branch}`
             });
           }
         );
       } else {
         // Item doesn't exist - create new entry
+        console.log('Inserting new item with values:', { branch, product, price, stock, imageUrl });
         db.run(
-          'INSERT INTO inventory (branch, product, price, stock) VALUES (?, ?, ?, ?)',
-          [branch, product, price, stock],
-          function(err) {
+          'INSERT INTO inventory (branch, product, price, stock, imageUrl) VALUES (?, ?, ?, ?, ?)',
+          [branch, product, price, stock, imageUrl],
+          function (err) {
             if (err) {
-              console.error('Error adding item:', err);
-              return res.status(500).json({ error: 'Failed to add item' });
+              console.error('FULL SQL ERROR:', err);
+              console.error('Values attempted:', [branch, product, price, stock, imageUrl]);
+              return res.status(500).json({ error: 'Failed to add item: ' + err.message });
             }
 
             res.status(201).json({
@@ -400,7 +399,7 @@ router.delete('/:id', authenticateToken, (req, res) => {
     const adminName = req.user.username;
     const notificationMessage = `Delete Update: ${item.branch} ${item.product} has been removed from inventory (Deleted by Admin ${adminName}).`;
 
-    db.run('DELETE FROM inventory WHERE id = ?', [req.params.id], function(err) {
+    db.run('DELETE FROM inventory WHERE id = ?', [req.params.id], function (err) {
       if (err) {
         console.error('Error deleting item:', err);
         return res.status(500).json({ error: 'Failed to delete item' });
